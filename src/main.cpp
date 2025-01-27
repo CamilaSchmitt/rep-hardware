@@ -3,12 +3,16 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <WiFi.h>
+#include <time.h>
 
-/*_____________________________ CONECTAR NO WIFI __________________________________________________________________*/
+/*_____________________________ CONECTAR NO WIFI e RECUPERAR HORA ________________________________________________________________*/
 
 // Credenciais da rede Wi-Fi
 const char* ssid = "Galaxy";         // Substitua pelo nome da sua rede
 const char* password = "txmy7010";   // Substitua pela senha da sua rede
+
+long timezone = -3;
+byte daysavetime = 1;
 
 void setup() {
   // Inicia a comunicação serial
@@ -30,10 +34,26 @@ void setup() {
   Serial.println("Wi-Fi conectado!");
   Serial.print("Endereço IP: ");
   Serial.println(WiFi.localIP()); // Imprime o IP obtido
+
+
+  Serial.println("Conecção ao servidor NTP");
+  configTime(3600 * timezone, daysavetime * 3600, "time.nist.gov", "0.pool.ntp.org", "1.pool.ntp.org");
 }
 
 void loop() {
-  // Código principal
+  struct tm tmstruct;
+
+  // Obtém o horário local
+  if (getLocalTime(&tmstruct)) { // Verifica se conseguiu obter o tempo
+    String date = String((tmstruct.tm_mday)) + "-" + String((tmstruct.tm_mon) + 1) + "-" + String((tmstruct.tm_year + 1900)); // Formato dia-mês
+    String hour = String(tmstruct.tm_hour) + ":" + String(tmstruct.tm_min) + ":" + String(tmstruct.tm_sec);
+
+    Serial.println("Data: " + date + " - Hora: " + hour);
+  } else {
+    Serial.println("Falha ao obter horário");
+  }
+
+  delay(1000);
 }
 
 /*_____________________________ LEITURA DE DIGITAL __________________________________________________________________*/
