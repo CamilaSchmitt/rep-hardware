@@ -5,74 +5,61 @@
 #include <_Time.h>
 #include <_Fingerprint.h>
 
+// Credenciais da rede Wi-Fi
+const char* ssid = "Galaxy";         // Substitua pelo nome da sua rede
+const char* password = "txmy7010";   // Substitua pela senha da sua rede
 
-/*_____________________________ MENU ________________________________________________________________*/
-
-// void setup() {
-//   Serial.begin(115200);
-//   Serial.println("Menu:");
-//   Serial.println("1 - Cadastrar digital");
-//   Serial.println("2 - Ler digital");
-//   Serial.println("3 - Cadastrar cartão");
-//   Serial.println("4 - Ler cartão");
-//   Serial.println("5 - Cadastrar tag NFC");
-//   Serial.println("6 - Ler tag NFC");
-//   Serial.println("7 - Verificar horário");
-
-//   while (!Serial.available()) {
-//     delay(10);
-//   }
-
-//   int opcao = Serial.parseInt();
-
-//   switch (opcao) {
-//     case 1:
-//       // Cadastrar digital
-//       break;
-//     case 2:
-//       // Ler digital
-//       break;
-//     case 3:
-//       // Cadastrar cartão
-//       break;
-//     case 4:
-//       // Ler cartão
-//       break;
-//     case 5:
-//       // Cadastrar tag NFC
-//       break;
-//     case 6:
-//       // Ler tag NFC
-//       break;
-//     case 7:
-//       // Verificar horário
-//       break;
-//     default:
-//       Serial.println("Opção inválida");
-//       break;
-//   }
-// }
-
-
-/*_____________________________ CONECTAR NO WIFI e RECUPERAR HORA ________________________________________________________________*/
-
-void setup() {
+void setup()
+{
   // Inicia a comunicação serial
   Serial.begin(115200);
-  delay(10);
+  while (!Serial.available());
 
+  setupWifi(ssid, password);
   setupNfc();
-  setupWifi();
   setupTime();
-  setupFingerprintEnroll();
+  setupFingerprintVerify();
 }
 
-void loop() {
-  printLocalTime();
+void loop()
+{
+  Serial.println("Menu:");
+  Serial.println("1 - Cadastrar digital");
+  Serial.println("2 - Ler digital");
+  Serial.println("3 - Cadastrar tag NFC");
+  Serial.println("4 - Ler tag NFC");
+  Serial.println("5 - Verificar data");
+  Serial.println("6 - Verificar hora");
+  Serial.println("Digite a opção desejada:");
+  int opcao = Serial.parseInt();
 
-  delay(1000);
+  switch (opcao) {
+    case 1:
+      // Cadastrar digital
+      loopFingerprint();
+      break;
+    case 2:
+      // Ler digital
+      loopFingerprintVerify();
+      break;
+    case 3:
+      // Cadastrar tag NFC
+      loopNfc(true);
+      break;
+    case 4:
+      // Ler tag NFC
+      loopNfc(false);
+      break;
+    case 5:
+      // Verificar data
+      getLocalDateOrTime(true);
+      break;
+    case 6:
+      // Verificar hora
+      getLocalDateOrTime(false);
+      break;
+    default:
+      Serial.println("Opção inválida");
+      break;
+  }
 }
-
-
-
-
