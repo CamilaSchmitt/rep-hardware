@@ -191,17 +191,18 @@ uint8_t getFingerprintEnroll()
     return true;
 }
 
-uint8_t readnumber(void)
-{
-    uint8_t num = 0;
+// uint8_t readnumber(void)
+// {
+//     uint8_t num = 0;
 
-    while (num == 0)
-    {
-        while (!Serial.available());
-        num = Serial.parseInt();
-    }
-    return num;
-}
+//     while (num == 0)
+//     {
+//         while (!Serial.available())
+//             ;
+//         num = Serial.parseInt();
+//     }
+//     return num;
+// }
 
 void setupFingerprintEnroll()
 {
@@ -241,15 +242,17 @@ void setupFingerprintEnroll()
     Serial.println(finger.baud_rate);
 }
 
-void loopFingerprint()
+void loopFingerprint(int identificador)
 {
+    id = identificador;
+    
     Serial.println("Pronto para cadastrar uma digital!");
-    Serial.println("Digite o número do ID (de 1 a 127) que você deseja atribuir a esta digital...");
-    id = readnumber();
-    if (id == 0)
-    { // ID #0 not allowed, try again!
-        return;
-    }
+    // Serial.println("Digite o número do ID (de 1 a 127) que você deseja atribuir a esta digital...");
+    // id = readnumber();
+    // if (id == 0)
+    // { // ID #0 not allowed, try again!
+    //     return;
+    // }
     Serial.print("Cadastrando digital com ID #");
     Serial.println(id);
 
@@ -258,7 +261,6 @@ void loopFingerprint()
 }
 
 /*_____________________________ CADASTRO DE DIGITAL __________________________________________________________________*/
-
 
 /*_____________________________ VERIFICACAO DE DIGITAL __________________________________________________________________*/
 
@@ -341,20 +343,26 @@ uint8_t getFingerprintID()
 }
 
 // returns -1 if failed, otherwise returns ID #
-int getFingerprintIDez() {
-  uint8_t p = finger.getImage();
-  if (p != FINGERPRINT_OK)  return -1;
+int getFingerprintIDez()
+{
+    uint8_t p = finger.getImage();
+    if (p != FINGERPRINT_OK)
+        return -1;
 
-  p = finger.image2Tz();
-  if (p != FINGERPRINT_OK)  return -1;
+    p = finger.image2Tz();
+    if (p != FINGERPRINT_OK)
+        return -1;
 
-  p = finger.fingerFastSearch();
-  if (p != FINGERPRINT_OK)  return -1;
+    p = finger.fingerFastSearch();
+    if (p != FINGERPRINT_OK)
+        return -1;
 
-  // found a match!
-  Serial.print("ID encontrado: #"); Serial.print(finger.fingerID);
-  Serial.print(" com nível de confiança de "); Serial.println(finger.confidence);
-  return finger.fingerID;
+    // found a match!
+    Serial.print("ID encontrado: #");
+    Serial.print(finger.fingerID);
+    Serial.print(" com nível de confiança de ");
+    Serial.println(finger.confidence);
+    return finger.fingerID;
 }
 
 void setupFingerprintVerify()
@@ -379,7 +387,7 @@ void setupFingerprintVerify()
 void loopFingerprintVerify()
 {
     getFingerprintID();
-    delay(50); 
+    delay(50);
 }
 
 /*_____________________________ VERIFICACAO DE DIGITAL __________________________________________________________________*/

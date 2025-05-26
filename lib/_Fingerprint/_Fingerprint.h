@@ -5,7 +5,7 @@
 unsigned char getFingerprintEnroll();
 unsigned char readnumber(void);
 void setupFingerprintEnroll();
-void loopFingerprint();
+void loopFingerprint(int);
 /*_____________________________ CADASTRO DE DIGITAL __________________________________________________________________*/
 
 /*_____________________________ VERIFICACAO DE DIGITAL __________________________________________________________________*/
