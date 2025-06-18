@@ -191,19 +191,6 @@ uint8_t getFingerprintEnroll()
     return true;
 }
 
-// uint8_t readnumber(void)
-// {
-//     uint8_t num = 0;
-
-//     while (num == 0)
-//     {
-//         while (!Serial.available())
-//             ;
-//         num = Serial.parseInt();
-//     }
-//     return num;
-// }
-
 void setupFingerprintEnroll()
 {
     Serial.println("\n\nCadastro de digitais - Sensor de Impressão Digital Adafruit");
@@ -384,10 +371,10 @@ void setupFingerprintVerify()
     }
 }
 
-void loopFingerprintVerify()
-{
-    getFingerprintID();
-    delay(50);
-}
+// void loopFingerprintVerify()
+// {
+//     getFingerprintID();
+//     delay(50);
+// }
 
 /*_____________________________ VERIFICACAO DE DIGITAL __________________________________________________________________*/

@@ -3,7 +3,7 @@
 #include <time.h>
 
 #define TIMEZONE (-3)
-#define DAYSAVETIME (1)
+#define DAYSAVETIME (0) // <- sem horário de verão
 
 void setupTime()
 {
@@ -11,24 +11,22 @@ void setupTime()
     configTime(3600 * TIMEZONE, DAYSAVETIME * 3600, "time.nist.gov", "0.pool.ntp.org", "1.pool.ntp.org");
 }
 
-String getLocalDateOrTime(bool isDate)
+String getLocalDateAndTime()
 {
     struct tm tmstruct;
 
     if (getLocalTime(&tmstruct))
     {
-        if (isDate)
-        {
-            // Obtém a data local
-            String date = String((tmstruct.tm_mday)) + "/" + String((tmstruct.tm_mon) + 1) + "/" + String((tmstruct.tm_year + 1900)); // Formato dia-mês
-            return date;
-        }
-        else
-        {
-            // Obtém o horário local
-            String hour = String(tmstruct.tm_hour) + ":" + String(tmstruct.tm_min) + ":" + String(tmstruct.tm_sec);
-            return hour;
-        }
+        char isoDateTime[30];
+        snprintf(isoDateTime, sizeof(isoDateTime), "%04d-%02d-%02dT%02d:%02d:%02d.000",
+                 tmstruct.tm_year + 1900,
+                 tmstruct.tm_mon + 1,
+                 tmstruct.tm_mday,
+                 tmstruct.tm_hour,
+                 tmstruct.tm_min,
+                 tmstruct.tm_sec);
+
+        return String(isoDateTime);
     }
     else
     {

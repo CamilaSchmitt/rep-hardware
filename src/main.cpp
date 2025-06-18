@@ -4,11 +4,15 @@
 #include <WebServer.h>
 #include <HTTPClient.h>
 
+
 #include <_Nfc.h>
 #include <_Wifi.h>
 #include <_Time.h>
 #include <_Fingerprint.h>
 #include <ESPmDNS.h>
+
+int pinVerde = 12;
+int pinVermelho = 32;
 
 // Credenciais da rede Wi-Fi
 const char *ssid = "Gabriel";
@@ -27,7 +31,8 @@ String url_base;
 // Servidor HTTP (porta 80)
 WebServer server(80);
 
-uint8_t opcao = 0;
+// Resolve o hostname para um IP
+String resolvedIP;
 
 // Rotas que podem ser acessadas pela API
 void setupServerRoutes()
@@ -66,16 +71,6 @@ void setupServerRoutes()
 
     server.send(200, "text/plain", "Digital cadastrada com sucesso."); });
 
-  server.on("/cadastrar-nfc", HTTP_POST, []()
-            {
-    loopNfc(true);  // função de cadastro
-    server.send(200, "text/plain", "NFC cadastrado com sucesso."); });
-
-  // server.on("/ler-nfc", HTTP_GET, []() {
-  //   String tag = loopNfc(false);  // Lê uma tag NFC
-  //   server.send(200, "application/json", "{\"tag\": \"" + tag + "\"}");
-  // });
-
   // server.on("/hora", HTTP_GET, []() {
   //   String hora = getLocalDateOrTime(false);
   //   server.send(200, "text/plain", hora);
@@ -85,36 +80,43 @@ void setupServerRoutes()
   //   String data = getLocalDateOrTime(true);
   //   server.send(200, "text/plain", data);
   // });
+
+  // server.on("/cadastrar-nfc", HTTP_POST, []()
+  //           {
+  //   loopNfc(true);  // função de cadastro
+  //   server.send(200, "text/plain", "NFC cadastrado com sucesso."); });
+
+  // server.on("/ler-nfc", HTTP_GET, []() {
+  //   String tag = loopNfc(false);  // Lê uma tag NFC
+  //   server.send(200, "application/json", "{\"tag\": \"" + tag + "\"}");
+  // });
 }
 
 void setup()
 {
   Serial.begin(115200);
 
+  pinMode(pinVerde, OUTPUT);
+  pinMode(pinVermelho, OUTPUT);
+
   setupWifi(ssid, password);
 
-  String resolvedIP = resolve(hostnameAPI);
+  // ESP32 como CLIENTE HTTP */
+  resolvedIP = resolve(hostnameAPI);
   if (resolvedIP != "")
   {
-    url_base = scheme + resolvedIP + port + prefix;
-    String url = url_base + "/usuarios";
-
-    http.begin(url);
-    int httpResponseCode = http.GET();
-    if (httpResponseCode > 0)
-    {
-      Serial.print("Resposta HTTP: ");
-      Serial.println(httpResponseCode);
-      Serial.println(http.getString());
-    }
-    else
-    {
-      Serial.print("Erro HTTP: ");
-      Serial.println(httpResponseCode);
-    }
-    http.end();
+    Serial.println("IP resolvido: " + resolvedIP);
   }
+  else
+  {
+    Serial.println("Erro ao resolver o IP do host: " + String(hostnameAPI));
+    Serial.println("O ESP32 vai reiniciar em 1s...");
+    delay(1000);
+    ESP.restart();
+  }
+  // ESP32 como CLIENTE HTTP */
 
+  // ESP32 como SERVIDOR HTTP */
   /* Usa MDNS para resolver o DNS */
   if (!MDNS.begin(hostnameESP))
   {
@@ -126,7 +128,8 @@ void setup()
 
   setupServerRoutes(); // configura as rotas
   server.begin();      // inicia o servidor
-  Serial.println("mDNS configurado e inicializado;");
+  Serial.println("mDNS configurado e inicializado.");
+  /* ESP32 como SERVIDOR HTTP */
 
   setupNfc();
   setupTime();
@@ -135,46 +138,46 @@ void setup()
 
 void loop()
 {
-  server.handleClient(); // trata requisições da API
+  // server.handleClient(); // trata requisições da API
 
-  // Modo manual via Serial (menu)
-  // Serial.println("Menu:");
-  // Serial.println("1 - Cadastrar digital");
-  // Serial.println("2 - Ler digital");
-  // Serial.println("3 - Cadastrar tag NFC");
-  // Serial.println("4 - Ler tag NFC");
-  // Serial.println("5 - Verificar data");
-  // Serial.println("6 - Verificar hora");
-  // Serial.println("Digite a opção desejada:");
+  // int id = getFingerprintID(); // verifica se há digitais cadastradas
+  // if (id != -1)
+  // {
+  //   Serial.print("Digital verificada com sucesso! ID: ");
+  //   url_base = scheme + resolvedIP + port + prefix;
+  //   String url = url_base + "/registro";
 
-  // while (opcao == 0) {
-  //   while (!Serial.available());
-  //   opcao = Serial.parseInt();
+  //   http.begin(url);
+  //   http.addHeader("Content-Type", "application/json");
+
+  //   // Cria o JSON
+  //   StaticJsonDocument<200> jsonDoc;
+  //   jsonDoc["dt_hora_marcacao"] = getLocalDateAndTime();
+  //   jsonDoc["dispositivo"] = id;
+
+  //   String payload;
+  //   serializeJson(jsonDoc, payload);
+
+  //   int httpResponseCode = http.POST(payload);
+
+  //   if (httpResponseCode > 0)
+  //   {
+  //     Serial.print("Resposta HTTP: ");
+  //     Serial.println(httpResponseCode);
+  //     Serial.println(http.getString());
+  //   }
+  //   else
+  //   {
+  //     Serial.print("Erro HTTP: ");
+  //     Serial.println(httpResponseCode);
+  //   }
+
+  //   http.end();
   // }
 
-  // switch (opcao) {
-  //   case 1:
-  //     loopFingerprint();
-  //     break;
-  //   case 2:
-  //     loopFingerprintVerify();
-  //     break;
-  //   case 3:
-  //     loopNfc(true);
-  //     break;
-  //   case 4:
-  //     loopNfc(false);
-  //     break;
-  //   case 5:
-  //     Serial.println(getLocalDateOrTime(true));
-  //     break;
-  //   case 6:
-  //     Serial.println(getLocalDateOrTime(false));
-  //     break;
-  //   default:
-  //     Serial.println("Opção inválida");
-  //     break;
-  // }
 
-  // opcao = 0; // reseta a opção para o próximo loop
+
+  loopNfc(true); // Cadastrar tag NFC
+  // loopNfc(false); // Ler tag NFC
+  
 }

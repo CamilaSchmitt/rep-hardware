@@ -9,8 +9,8 @@
 #define SIZE_BUFFER 18
 #define MAX_SIZE_BLOCK 16
 
-#define pinVerde 12
-#define pinVermelho 32
+extern int pinVerde;    // pino do LED verde
+extern int pinVermelho; // pino do LED vermelho
 
 // esse objeto 'chave' é utilizado para autenticação
 MFRC522::MIFARE_Key key;
@@ -19,6 +19,10 @@ MFRC522::StatusCode status;
 
 // Definicoes pino modulo RC522
 MFRC522 mfrc522(SS_PIN, RST_PIN);
+
+
+char st[20];                          // string com 20 caracteres
+String UID = "";                      // string da identificação UID
 
 // faz a leitura dos dados do cartão/tag
 void leituraDados()
@@ -145,39 +149,37 @@ void gravarDados()
   }
 }
 
-// menu para escolha da operação
-int menu()
+
+void getUID()
 {
-  Serial.println(F("\nEscolha uma opção:"));
-  Serial.println(F("0 - Leitura de Dados"));
-  Serial.println(F("1 - Gravação de Dados\n"));
-
-  // fica aguardando enquanto o usuário nao enviar algum dado
-  while (!Serial.available())
+  Serial.print("UID da tag NFC : ");                            // imprime no monitor serial
+  for (byte i = 0; i < mfrc522.uid.size; i++)                   // leitura da identificação UID da NFC
   {
-  };
-
-  // recupera a opção escolhida
-  int op = (int)Serial.read();
-  // remove os proximos dados (como o 'enter ou \n' por exemplo) que vão por acidente
-  while (Serial.available())
-  {
-    if (Serial.read() == '\n')
-      break;
-    Serial.read();
+    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");   // imprime os bytes
+    Serial.print(mfrc522.uid.uidByte[i], HEX);                  // imprime UID em hexadecimal
+    if ( mfrc522.uid.uidByte[i] < 0x10)                         // se byte menor do que 16
+      UID.concat(" 0");                                         // insere um zero
+    else                                                        // senão
+      UID.concat(" ");                                          // insere um espaço
+    UID.concat(String(mfrc522.uid.uidByte[i], HEX));            // concatena todos os bytes da UID
   }
-  return (op - 48); // do valor lido, subtraimos o 48 que é o ZERO da tabela ascii
+  UID.toUpperCase();                                            // converte em maiusculos
+  Serial.println(" ");                                          // imprime espaço
+
+  Serial.println(UID);
 }
+
 
 void setupNfc()
 {
   SPI.begin(); // Init SPI bus
 
-  pinMode(pinVerde, OUTPUT);
-  pinMode(pinVermelho, OUTPUT);
-
   // Inicia MFRC522
   mfrc522.PCD_Init();
+  // mostra as informções do modulo RC522
+  mfrc522.PCD_DumpVersionToSerial();     
+  
+  Serial.println("Lendo a etiqueta NTAG213 =  UID, SAK, tipo e blocos de dados...");               
 }
 
 void loopNfc(bool gravar)
@@ -192,6 +194,9 @@ void loopNfc(bool gravar)
   {
     return;
   }
+  UID = "";                            // limpa o registro de identificação UID
+  getUID();                            // lê e formata a identificação UID
+
 
   // Dump debug info about the card; PICC_HaltA() is automatically called
   //  mfrc522.PICC_DumpToSerial(&(mfrc522.uid));
@@ -204,18 +209,21 @@ void loopNfc(bool gravar)
   //    return;
   //  }
 
-  if (gravar == 0)
-    leituraDados();
-  else if (gravar == 1)
-    gravarDados();
-  else
-  {
-    Serial.println(F("Opção Incorreta!"));
-    return;
-  }
+ 
+ 
+ 
+  // if (gravar == 0)
+  //   leituraDados();
+  // else if (gravar == 1)
+  //   gravarDados();
+  // else
+  // {
+  //   Serial.println(F("Opção Incorreta!"));
+  //   return;
+  // }
 
-  // instrui o PICC quando no estado ACTIVE a ir para um estado de "parada"
-  mfrc522.PICC_HaltA();
-  // "stop" a encriptação do PCD, deve ser chamado após a comunicação com autenticação, caso contrário novas comunicações não poderão ser iniciadas
-  mfrc522.PCD_StopCrypto1();
+  // // instrui o PICC quando no estado ACTIVE a ir para um estado de "parada"
+  // mfrc522.PICC_HaltA();
+  // // "stop" a encriptação do PCD, deve ser chamado após a comunicação com autenticação, caso contrário novas comunicações não poderão ser iniciadas
+  // mfrc522.PCD_StopCrypto1();
 }

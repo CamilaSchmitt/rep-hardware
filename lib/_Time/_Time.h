@@ -4,6 +4,6 @@
 #include <Arduino.h>
 
 void setupTime();
-String getLocalDateOrTime(bool isDate);
+String getLocalDateAndTime();
 
 #endif // Time_h
