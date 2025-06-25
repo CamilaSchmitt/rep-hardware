@@ -371,10 +371,4 @@ void setupFingerprintVerify()
     }
 }
 
-// void loopFingerprintVerify()
-// {
-//     getFingerprintID();
-//     delay(50);
-// }
-
 /*_____________________________ VERIFICACAO DE DIGITAL __________________________________________________________________*/

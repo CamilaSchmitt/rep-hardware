@@ -20,9 +20,8 @@ MFRC522::StatusCode status;
 // Definicoes pino modulo RC522
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
-
-char st[20];                          // string com 20 caracteres
-String UID = "";                      // string da identificação UID
+char st[20];     // string com 20 caracteres
+String UID = ""; // string da identificação UID
 
 // faz a leitura dos dados do cartão/tag
 void leituraDados()
@@ -42,16 +41,16 @@ void leituraDados()
   byte tamanho = SIZE_BUFFER;
 
   // faz a autenticação do bloco que vamos operar
-  status = mfrc522.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, bloco, &key, &(mfrc522.uid)); // line 834 of MFRC522.cpp file
-  if (status != MFRC522::STATUS_OK)
-  {
-    Serial.print(F("Authentication failed: "));
-    Serial.println(mfrc522.GetStatusCodeName(status));
-    digitalWrite(pinVermelho, HIGH);
-    delay(1000);
-    digitalWrite(pinVermelho, LOW);
-    return;
-  }
+  // status = mfrc522.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, bloco, &key, &(mfrc522.uid)); // line 834 of MFRC522.cpp file
+  // if (status != MFRC522::STATUS_OK)
+  // {
+  //   Serial.print(F("Authentication failed: "));
+  //   Serial.println(mfrc522.GetStatusCodeName(status));
+  //   digitalWrite(pinVermelho, HIGH);
+  //   delay(1000);
+  //   digitalWrite(pinVermelho, LOW);
+  //   return;
+  // }
 
   // faz a leitura dos dados do bloco
   status = mfrc522.MIFARE_Read(bloco, buffer, &tamanho);
@@ -149,26 +148,24 @@ void gravarDados()
   }
 }
 
-
 void getUID()
 {
-  Serial.print("UID da tag NFC : ");                            // imprime no monitor serial
-  for (byte i = 0; i < mfrc522.uid.size; i++)                   // leitura da identificação UID da NFC
+  Serial.print("UID da tag NFC : ");          // imprime no monitor serial
+  for (byte i = 0; i < mfrc522.uid.size; i++) // leitura da identificação UID da NFC
   {
-    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");   // imprime os bytes
-    Serial.print(mfrc522.uid.uidByte[i], HEX);                  // imprime UID em hexadecimal
-    if ( mfrc522.uid.uidByte[i] < 0x10)                         // se byte menor do que 16
-      UID.concat(" 0");                                         // insere um zero
-    else                                                        // senão
-      UID.concat(" ");                                          // insere um espaço
-    UID.concat(String(mfrc522.uid.uidByte[i], HEX));            // concatena todos os bytes da UID
+    Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " "); // imprime os bytes
+    Serial.print(mfrc522.uid.uidByte[i], HEX);                // imprime UID em hexadecimal
+    if (mfrc522.uid.uidByte[i] < 0x10)                        // se byte menor do que 16
+      UID.concat(" 0");                                       // insere um zero
+    else                                                      // senão
+      UID.concat(" ");                                        // insere um espaço
+    UID.concat(String(mfrc522.uid.uidByte[i], HEX));          // concatena todos os bytes da UID
   }
-  UID.toUpperCase();                                            // converte em maiusculos
-  Serial.println(" ");                                          // imprime espaço
+  UID.toUpperCase();   // converte em maiusculos
+  Serial.println(" "); // imprime espaço
 
   Serial.println(UID);
 }
-
 
 void setupNfc()
 {
@@ -177,41 +174,125 @@ void setupNfc()
   // Inicia MFRC522
   mfrc522.PCD_Init();
   // mostra as informções do modulo RC522
-  mfrc522.PCD_DumpVersionToSerial();     
-  
-  Serial.println("Lendo a etiqueta NTAG213 =  UID, SAK, tipo e blocos de dados...");               
+  mfrc522.PCD_DumpVersionToSerial();
+
+  Serial.println("Lendo a etiqueta NTAG213 =  UID, SAK, tipo e blocos de dados...");
 }
 
 void loopNfc(bool gravar)
 {
-  // Aguarda a aproximacao do cartao
-  if (!mfrc522.PICC_IsNewCardPresent())
+  if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial())
   {
-    return;
-  }
-  // Seleciona um dos cartoes
-  if (!mfrc522.PICC_ReadCardSerial())
-  {
-    return;
-  }
-  UID = "";                            // limpa o registro de identificação UID
-  getUID();                            // lê e formata a identificação UID
+    Serial.print(F("UID da tag: "));
+    for (byte i = 0; i < mfrc522.uid.size; i++)
+    {
+      Serial.print(mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ");
+      Serial.print(mfrc522.uid.uidByte[i], HEX);
+    }
+    Serial.println();
 
+    // Mostrar tipo da tag
+    MFRC522::PICC_Type piccType = mfrc522.PICC_GetType(mfrc522.uid.sak);
+    Serial.print(F("Tipo da tag: "));
+    Serial.println(mfrc522.PICC_GetTypeName(piccType));
+
+    // Tentar ler a memória (somente se MIFARE Classic)
+    if (piccType == MFRC522::PICC_TYPE_MIFARE_1K || piccType == MFRC522::PICC_TYPE_MIFARE_4K)
+    {
+      byte buffer[18];
+      byte size = sizeof(buffer);
+      MFRC522::StatusCode status;
+
+      // Chave padrão (0xFF) usada pela maioria das tags
+      MFRC522::MIFARE_Key key;
+      for (byte i = 0; i < 6; i++)
+        key.keyByte[i] = 0xFF;
+
+      for (byte blockAddr = 4; blockAddr < 64; blockAddr++)
+      {
+        byte sector = blockAddr / 4;
+
+        // Autenticar setor antes de tentar ler
+        status = mfrc522.PCD_Authenticate(
+            MFRC522::PICC_CMD_MF_AUTH_KEY_A,
+            blockAddr,
+            &key,
+            &(mfrc522.uid));
+
+        if (status != MFRC522::STATUS_OK)
+        {
+          Serial.print(F("Falha na autenticação do bloco "));
+          Serial.print(blockAddr);
+          Serial.print(F(": "));
+          Serial.println(mfrc522.GetStatusCodeName(status));
+          continue;
+        }
+
+        // Ler bloco após autenticação
+        status = mfrc522.MIFARE_Read(blockAddr, buffer, &size);
+        if (status == MFRC522::STATUS_OK)
+        {
+          Serial.print(F("Bloco "));
+          Serial.print(blockAddr);
+          Serial.print(F(": "));
+          for (byte i = 0; i < size; i++)
+          {
+            Serial.print(buffer[i] < 0x10 ? " 0" : " ");
+            Serial.print(buffer[i], HEX);
+          }
+          Serial.println();
+        }
+        else
+        {
+          Serial.print(F("Erro ao ler bloco "));
+          Serial.print(blockAddr);
+          Serial.print(F(": "));
+          Serial.println(mfrc522.GetStatusCodeName(status));
+        }
+      }
+    }
+    else
+    {
+      Serial.println(F("Tipo de tag não suportado pelo MFRC522."));
+    }
+
+    // Finalizar comunicação com a tag
+    mfrc522.PICC_HaltA();
+    mfrc522.PCD_StopCrypto1();
+
+    delay(1000); // evita múltiplas leituras seguidas
+  }
+
+  // // Aguarda a aproximacao do cartao
+  // if (!mfrc522.PICC_IsNewCardPresent())
+  // {
+  //   return;
+  // }
+  // // Seleciona um dos cartoes
+  // if (!mfrc522.PICC_ReadCardSerial())
+  // {
+  //   return;
+  // }
+  // if (!gravar)
+  // {
+  //   leituraDados();
+  // }
+  // else{
+  //   gravarDados(); // grava os dados no cartão/tag
+
+  // }
 
   // Dump debug info about the card; PICC_HaltA() is automatically called
   //  mfrc522.PICC_DumpToSerial(&(mfrc522.uid));
 
   // chama o menu e recupera a opção desejada
-// int gravar = menu();
+  // int gravar = menu();
   // verifica se ainda está com o cartão/tag
   //  if ( ! mfrc522.PICC_IsNewCardPresent())
   //  {
   //    return;
   //  }
 
- 
- 
- 
   // if (gravar == 0)
   //   leituraDados();
   // else if (gravar == 1)

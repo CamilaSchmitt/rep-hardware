@@ -37,10 +37,11 @@ String resolvedIP;
 // Rotas que podem ser acessadas pela API
 void setupServerRoutes()
 {
-  // server.on("/ler-digital", HTTP_GET, []() {
-  //   int id = loopFingerprintVerify();  // ou outra função sua que retorne a digital
-  //   server.send(200, "application/json", "{\"digital\": " + String(id) + "}");
-  // });
+
+  server.on("/cadastrar-nfc", HTTP_POST, []()
+            {
+    loopNfc(true);  // função de cadastro
+    server.send(200, "text/plain", "NFC cadastrado com sucesso."); });
 
   server.on("/cadastrar-digital", HTTP_POST, []()
             {
@@ -70,26 +71,6 @@ void setupServerRoutes()
     loopFingerprint(id);
 
     server.send(200, "text/plain", "Digital cadastrada com sucesso."); });
-
-  // server.on("/hora", HTTP_GET, []() {
-  //   String hora = getLocalDateOrTime(false);
-  //   server.send(200, "text/plain", hora);
-  // });
-
-  // server.on("/data", HTTP_GET, []() {
-  //   String data = getLocalDateOrTime(true);
-  //   server.send(200, "text/plain", data);
-  // });
-
-  // server.on("/cadastrar-nfc", HTTP_POST, []()
-  //           {
-  //   loopNfc(true);  // função de cadastro
-  //   server.send(200, "text/plain", "NFC cadastrado com sucesso."); });
-
-  // server.on("/ler-nfc", HTTP_GET, []() {
-  //   String tag = loopNfc(false);  // Lê uma tag NFC
-  //   server.send(200, "application/json", "{\"tag\": \"" + tag + "\"}");
-  // });
 }
 
 void setup()
@@ -131,53 +112,60 @@ void setup()
   Serial.println("mDNS configurado e inicializado.");
   /* ESP32 como SERVIDOR HTTP */
 
-  setupNfc();
   setupTime();
+  setupNfc();
   setupFingerprintVerify();
 }
 
 void loop()
 {
-  // server.handleClient(); // trata requisições da API
+  server.handleClient(); // trata requisições da API
 
-  // int id = getFingerprintID(); // verifica se há digitais cadastradas
-  // if (id != -1)
-  // {
-  //   Serial.print("Digital verificada com sucesso! ID: ");
-  //   url_base = scheme + resolvedIP + port + prefix;
-  //   String url = url_base + "/registro";
+  delay(2000); // aguarda 2 segundo entre as requisições
+  int id = getFingerprintIDez(); // verifica se há digitais cadastradas
+  if (id != -1)
+  {
+    Serial.print("Digital verificada com sucesso! ID: ");
+    url_base = scheme + resolvedIP + port + prefix;
+    String url = url_base + "/registros";
 
-  //   http.begin(url);
-  //   http.addHeader("Content-Type", "application/json");
+    http.begin(url);
+    http.addHeader("Content-Type", "application/json");
 
-  //   // Cria o JSON
-  //   StaticJsonDocument<200> jsonDoc;
-  //   jsonDoc["dt_hora_marcacao"] = getLocalDateAndTime();
-  //   jsonDoc["dispositivo"] = id;
+    // Cria o JSON
+    StaticJsonDocument<256> jsonDoc;
+    jsonDoc["dt_hora_marcacao"] = getLocalDateAndTime();
+    JsonObject dispositivoObj = jsonDoc.createNestedObject("dispositivo");
+    dispositivoObj["id"] = id;
+    dispositivoObj["tipo"] = "Biometria";
 
-  //   String payload;
-  //   serializeJson(jsonDoc, payload);
+    
+    String payload;
+    serializeJson(jsonDoc, payload);
+    
+    Serial.print("Payload:");
+    Serial.println(payload);
+    int httpResponseCode = http.POST(payload);
 
-  //   int httpResponseCode = http.POST(payload);
+    if (httpResponseCode == 201)
+    {
+      Serial.print("Resposta HTTP: ");
+      Serial.println(httpResponseCode);
+      Serial.println(http.getString());
+    }
+    else
+    {
+      Serial.print("Erro HTTP: ");
+      Serial.println(httpResponseCode);
+    }
 
-  //   if (httpResponseCode > 0)
-  //   {
-  //     Serial.print("Resposta HTTP: ");
-  //     Serial.println(httpResponseCode);
-  //     Serial.println(http.getString());
-  //   }
-  //   else
-  //   {
-  //     Serial.print("Erro HTTP: ");
-  //     Serial.println(httpResponseCode);
-  //   }
-
-  //   http.end();
-  // }
+    http.end();
+  }
 
 
 
-  loopNfc(true); // Cadastrar tag NFC
+  // loopNfc(true); // Cadastrar tag NFC
   // loopNfc(false); // Ler tag NFC
+
   
 }
